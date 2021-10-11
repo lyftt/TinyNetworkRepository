@@ -85,7 +85,7 @@ void SafeQueue<T>::waitReady(std::unique_lock<std::mutex>& lk, int waitMs)
     if(waitMs == wait_infinite)
     {
         m_cond.wait(lk, [this] { return m_exit || !m_items.empty(); })
-    }else
+    }else if(waitMs > 0)
     {
         auto tp = std::chrono::steady_clock::now() + std::chrono::milliseconds(waitMs);
         //m_cond.wait_until(lk, tp, [this] { !m_items.empty() || m_exit});

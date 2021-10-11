@@ -20,6 +20,13 @@ struct EventBase: private EventBases
     void exit();                   //退出事件循环
     bool exited();                 //是否已退出
     void wakeUp();                 //管道唤醒
+    bool cancel(TimerId timerId);  //取消定时任务
+
+    void addTask(Task&& task);     //向eventbase的任务队列添加任务
+    void addTask(const Task& task){
+        addTask(Task(task));
+    }
+
     virtual EventBase *allocBase() override { return this; }
 
 private:

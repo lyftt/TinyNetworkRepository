@@ -1,6 +1,7 @@
 #include "tiny_eventbase.h"
 #include "tiny_poller.h"
 #include "tiny_util.h"
+#include "tiny_safequeue.h"
 #include <iostream>
 #include <errno.h>
 #include <cstring>
@@ -28,6 +29,8 @@ struct EventBaseImpl
     int          m_nextTimeOut;    //poller下次超时时间，用于实现定时器
     std::atomic<int64_t> m_timerSeq;  //定时器序号
 
+    SafeQueue<Task> m_tasks;       //eventbase的任务队列
+
     std::map<TimerId, Task> m_timers;              //所有定时器map, 持久和非持久定时器都在这个map中，起到小顶堆的作用, 所有定时器进进出出
     std::map<TimerId, TimerRepeatable> m_repTimers; //持久定时器信息map, 到期之后的持久定时器会重新加入到m_timers中
 
@@ -40,6 +43,8 @@ struct EventBaseImpl
     void loop();                //进入事件循环
     void loopOnce(int waitMs);  //处理到期事件
     void wakeUp();              //通过管道唤醒
+    void addTask(Task&& task);  //添加任务
+    bool cancel(TimerId timerId) //取消定时任务
 
     bool cancel(TimerId timerId);                                //取消定时器任务
     TimerId runAt(int64_t milli, Task &&task, int64_t interval); //创建定时器任务, interval不等于0则表示持久定时器
@@ -52,6 +57,37 @@ struct EventBaseImpl
     bool exited() { return m_exit; }          //判断是否退出事件循环
     PollerBase* poller(){ return m_poller; }  //获取eventBase底层的poller
 };
+
+bool EventBaseImpl::cancel(TimerId timerId)
+{
+    if(timerId.first < 0)
+    {
+        auto p = m_repTimers.find(timerId);
+        auto pt = m_timers.find(p->second.m_timerid);
+        if(pt != m_timers.end())
+        {
+            m_timers.erase(pt);
+        }
+
+        m_repTimers.erase(p);
+        return true;
+    }else{
+        auto p = m_timers.find(timerId);
+        if(p != m_timers.end())
+        {
+            m_timers.erase(p);
+            return true;
+        }
+
+        return false;
+    }
+}
+
+void EventBaseImpl::addTask(Task&& task)
+{
+    m_tasks.push_back(std::move(task));
+    wakeUp();
+}
 
 void EventBaseImpl::repeatableTimeout(TimerRepeatable *tr)
 {
@@ -96,7 +132,7 @@ TimerId EventBaseImpl::runAt(int64_t milli, Task &&task, int64_t interval)
     
     if(interval)
     {
-        TimerId tid(-milli, ++m_timerSeq);
+        TimerId tid(-milli, ++m_timerSeq);   //持久定时器这里TimerId的first是负数，作为区分
         TimerRepeatable& rt = m_repTimers[tid];
         rt = {milli, interval, {milli, ++timerSeq_}, move(task)};
         TimerRepeatable* prt = &rt;
@@ -128,6 +164,11 @@ void EventBaseImpl::init()
             ret = ch->id() >= 0 ? ::read(ch->fd(), buf, 1) : 0;
             if(ret > 0)
             {
+                Task task;
+                while(m_tasks.popWait(&task, 0))
+                {
+                    task();
+                }
                 std::cout<<"EventBaseImpl recv "<<buf<<" from pipe"<<std::endl;
             }
             else if(ret == 0)
@@ -206,4 +247,14 @@ void EventBase::exit()
 bool EventBase::exited()
 {
     return m_impl->exited();
+}
+
+void EventBase::addTask(Task&& task)
+{
+    m_impl->addTask(std::move(task));
+}
+
+bool EventBase::cancel(TimerId timerId)
+{
+    return m_impl && m_impl->cancel(timerId);
 }
