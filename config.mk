@@ -9,6 +9,8 @@ export INCLUDE_PATH = $(BUILD_ROOT)/include
 BUILD_DIR = $(BUILD_ROOT)/signal/ \
 			$(BUILD_ROOT)/net/    \
 			$(BUILD_ROOT)/proc/   \
+			$(BUILD_ROOT)/thread/ \
+			$(BUILD_ROOT)/util/   \
 			$(BUILD_ROOT)/app/    \
 
 export DEBUG = true

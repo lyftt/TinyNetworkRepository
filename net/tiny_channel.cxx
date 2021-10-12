@@ -1,10 +1,11 @@
 #include "tiny_channel.h"
 #include "tiny_poller.h"
-#include "unistd.h"
+#include "tiny_eventbase.h"
+#include <unistd.h>
 
 Channel::Channel(EventBase* base, int fd, int events):m_base(base), m_fd(fd), m_events(events)
 {
-    static atomic<int64_t> id(0);
+    static std::atomic<int64_t> id(0);
     m_id = ++id;
     m_poller = m_base->poller();
     m_poller->addChannel(this);
@@ -20,7 +21,7 @@ void Channel::close()
     if(m_fd > 0)
     {
         m_poller->removeChannel(this);
-        ::close(m_fd)
+        ::close(m_fd);
         m_fd = -1;
     }
 }
@@ -54,16 +55,16 @@ void Channel::enableWrite(bool enable)
 void Channel::enableReadWrite(bool readable, bool writable)
 {
     if (readable) {
-        events_ |= ReadEvent;
+        m_events |= ReadEvent;
     } else {
-        events_ &= ~ReadEvent;
+        m_events &= ~ReadEvent;
     }
     if (writable) {
-        events_ |= WriteEvent;
+        m_events |= WriteEvent;
     } else {
-        events_ &= ~WriteEvent;
+        m_events &= ~WriteEvent;
     }
-    poller_->updateChannel(this);
+    m_poller->updateChannel(this);
 }
 
 bool Channel::readEnabled()

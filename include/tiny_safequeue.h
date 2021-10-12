@@ -49,7 +49,7 @@ bool SafeQueue<T>::push(T&& t)   //万能引用,左值右值都可以适配
 }
 
 template <typename T>
-T SafeQueue<T>::popWait(int waitMs=wait_infinite)
+T SafeQueue<T>::popWait(int waitMs)
 {
     std::unique_lock<std::mutex> lk(*this);
     waitReady(lk, waitMs);
@@ -63,7 +63,7 @@ T SafeQueue<T>::popWait(int waitMs=wait_infinite)
 }
 
 template <typename T>
-bool SafeQueue<T>::popWait(T* t, int waitMs=wait_infinite)
+bool SafeQueue<T>::popWait(T* t, int waitMs)
 {
     std::unique_lock<std::mutex> lk(*this);
     waitReady(lk, waitMs);
@@ -84,7 +84,7 @@ void SafeQueue<T>::waitReady(std::unique_lock<std::mutex>& lk, int waitMs)
     
     if(waitMs == wait_infinite)
     {
-        m_cond.wait(lk, [this] { return m_exit || !m_items.empty(); })
+        m_cond.wait(lk, [this] { return m_exit || !m_items.empty(); });
     }else if(waitMs > 0)
     {
         auto tp = std::chrono::steady_clock::now() + std::chrono::milliseconds(waitMs);
@@ -115,12 +115,6 @@ void SafeQueue<T>::exit()
     m_exit = true;     //这里不需要先加锁
     std::lock_guard<std::mutex> guard(*this);
     m_cond.notify_all();
-}
-
-template <typename T>
-bool SafeQueue<T>::exited()
-{
-    return m_exit;
 }
 
 #endif

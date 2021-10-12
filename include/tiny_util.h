@@ -3,8 +3,10 @@
 
 #include <cstdlib>
 #include <cstdint>
+#include <functional>
 
 using Task = std::function<void()>;
+using TimerId = std::pair<int64_t, int64_t>;
 //typedef std::function<void()> Task;
 
 struct NonCopyable

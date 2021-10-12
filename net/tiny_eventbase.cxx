@@ -2,6 +2,7 @@
 #include "tiny_poller.h"
 #include "tiny_util.h"
 #include "tiny_safequeue.h"
+#include "tiny_channel.h"
 #include <iostream>
 #include <errno.h>
 #include <cstring>
@@ -9,8 +10,6 @@
 #include <atomic>
 #include <map>
 #include <cstdint>
-
-using TimerId = std::pair<int64_t, int64_t>;
 
 struct TimerRepeatable {
     int64_t   m_at;
@@ -20,7 +19,7 @@ struct TimerRepeatable {
 };
 
 // 事件管理器实现类
-struct EventBaseImpl
+struct EventBase::EventBaseImpl
 {
     EventBase*   m_eventBase;      //关联的事件管理器对象
     PollerBase*  m_poller;         //事件管理器使用的poller
@@ -44,7 +43,6 @@ struct EventBaseImpl
     void loopOnce(int waitMs);  //处理到期事件
     void wakeUp();              //通过管道唤醒
     void addTask(Task&& task);  //添加任务
-    bool cancel(TimerId timerId) //取消定时任务
 
     bool cancel(TimerId timerId);                                //取消定时器任务
     TimerId runAt(int64_t milli, Task &&task, int64_t interval); //创建定时器任务, interval不等于0则表示持久定时器
@@ -58,7 +56,7 @@ struct EventBaseImpl
     PollerBase* poller(){ return m_poller; }  //获取eventBase底层的poller
 };
 
-bool EventBaseImpl::cancel(TimerId timerId)
+bool EventBase::EventBaseImpl::cancel(TimerId timerId)
 {
     if(timerId.first < 0)
     {
@@ -83,22 +81,22 @@ bool EventBaseImpl::cancel(TimerId timerId)
     }
 }
 
-void EventBaseImpl::addTask(Task&& task)
+void EventBase::EventBaseImpl::addTask(Task&& task)
 {
-    m_tasks.push_back(std::move(task));
+    m_tasks.push(std::move(task));
     wakeUp();
 }
 
-void EventBaseImpl::repeatableTimeout(TimerRepeatable *tr)
+void EventBase::EventBaseImpl::repeatableTimeout(TimerRepeatable *tr)
 {
     tr->m_at += tr->m_interval;    //刷新下次到期时间
     tr->m_timerid = {tr->m_at, ++m_timerSeq};
     m_timers[tr->m_timerid] = [this, tr] { repeatableTimeout(tr); };
-    refreshNearest();
+    refreshNearestTimeout();
     tr->m_cb();
 }
 
-void EventBaseImpl::handleTimeouts()
+void EventBase::EventBaseImpl::handleTimeouts()
 {
     int64_t now = util::timeMilli();
     TimerId tid{now, 1L << 62};
@@ -110,10 +108,10 @@ void EventBaseImpl::handleTimeouts()
         task();
     }
 
-    refreshNearest();   //刷新下次poller的超时时间
+    refreshNearestTimeout();   //刷新下次poller的超时时间
 }
 
-void EventBaseImpl::refreshNearestTimeout()
+void EventBase::EventBaseImpl::refreshNearestTimeout()
 {
     if(m_timers.empty())
         m_nextTimeOut = 1 << 30;
@@ -125,7 +123,7 @@ void EventBaseImpl::refreshNearestTimeout()
     }
 }
 
-TimerId EventBaseImpl::runAt(int64_t milli, Task &&task, int64_t interval)
+TimerId EventBase::EventBaseImpl::runAt(int64_t milli, Task &&task, int64_t interval)
 {
     if(m_exit)
         return TimerId();
@@ -134,7 +132,7 @@ TimerId EventBaseImpl::runAt(int64_t milli, Task &&task, int64_t interval)
     {
         TimerId tid(-milli, ++m_timerSeq);   //持久定时器这里TimerId的first是负数，作为区分
         TimerRepeatable& rt = m_repTimers[tid];
-        rt = {milli, interval, {milli, ++timerSeq_}, move(task)};
+        rt = {milli, interval, {milli, ++m_timerSeq}, move(task)};
         TimerRepeatable* prt = &rt;
         m_timers[prt->m_timerid] = [this, prt] { repeatableTimeout(prt); };
         refreshNearestTimeout();
@@ -148,7 +146,7 @@ TimerId EventBaseImpl::runAt(int64_t milli, Task &&task, int64_t interval)
     }
 }
 
-void EventBaseImpl::init()
+void EventBase::EventBaseImpl::init()
 {
     int ret = pipe(m_wakeupFds);
     if(ret < 0)
@@ -161,8 +159,8 @@ void EventBaseImpl::init()
     ch->onRead(
         [=]{
             char buf;
-            ret = ch->id() >= 0 ? ::read(ch->fd(), buf, 1) : 0;
-            if(ret > 0)
+            int r = ch->id() >= 0 ? ::read(ch->fd(), &buf, 1) : 0;
+            if(r > 0)
             {
                 Task task;
                 while(m_tasks.popWait(&task, 0))
@@ -171,7 +169,7 @@ void EventBaseImpl::init()
                 }
                 std::cout<<"EventBaseImpl recv "<<buf<<" from pipe"<<std::endl;
             }
-            else if(ret == 0)
+            else if(r == 0)
             {
                 delete ch;
             }
@@ -187,16 +185,16 @@ void EventBaseImpl::init()
     );
 }
 
-void EventBaseImpl::wakeUp()
+void EventBase::EventBaseImpl::wakeUp()
 {
-    int ret = ::write(m_wakeupFds[1], 'c', 1);
+    int ret = ::write(m_wakeupFds[1], (void*)'c', 1);
     if(ret < 0)
     {
         std::cout<<"EventBaseImpl write failed,  errno:"<<errno<<" "<<strerror(errno)<<std::endl;
     }
 }
 
-void EventBaseImpl::loop()
+void EventBase::EventBaseImpl::loop()
 {
     while(!m_exit)
         loopOnce(10000);
@@ -207,7 +205,7 @@ void EventBaseImpl::loop()
     loopOnce(0);    //额外处理到期事件
 }
 
-void EventBaseImpl::loopOnce(int waitMs)
+void EventBase::EventBaseImpl::loopOnce(int waitMs)
 {
     m_poller->loopOnce(waitMs);   //处理到期的读写事件
     handleTimeouts();             //处理到期的超时事件
@@ -224,7 +222,7 @@ EventBase::~EventBase()
     
 }
 
-EventBase::poller()
+PollerBase* EventBase::poller()
 {
     return m_impl->poller();
 }

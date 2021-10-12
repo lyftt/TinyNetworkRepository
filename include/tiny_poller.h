@@ -2,10 +2,11 @@
 #define __POLLER_H__
 
 #include "tiny_util.h"
-#include "tiny_channel.h"
 #include <set>
 #include <sys/epoll.h>
 #include <atomic>
+
+struct Channel;
 
 const int MaxEvents = 2000;
 const int ReadEvent = EPOLLIN;
@@ -20,9 +21,9 @@ struct PollerBase : private NonCopyable
     PollerBase():m_lastActive(-1){
         static std::atomic<int> id(0);
         m_id = ++id;
-    };
+    }
 
-    virtual ~PollerBase() override {};
+    virtual ~PollerBase() override {}
 
     virtual void addChannel(Channel* ch) = 0;
     virtual void removeChannel(Channel* ch) = 0;

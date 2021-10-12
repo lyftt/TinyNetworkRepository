@@ -1,11 +1,10 @@
 #ifndef __CHANNEL_H__
 #define __CHANNEL_H__
 
-#include "tiny_channel.h"
-#include "tiny_poller.h"
 #include "tiny_util.h"
-#include "tiny_eventbase.h"
-#include <function>
+#include <functional>
+struct EventBase;
+struct PollerBase;
 
 //通道封装一个fd，不携带应用层缓冲区
 struct Channel: private NonCopyable
@@ -16,7 +15,7 @@ struct Channel: private NonCopyable
 
     int id(){ return m_id; }
     int fd(){ return m_fd; }
-    short events { return m_events; }
+    short events() { return m_events; }
 
     //关闭通道
     void close();                     

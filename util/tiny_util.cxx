@@ -3,6 +3,6 @@
 
 int64_t util::timeMicro()
 {
-    chrono::time_point<chrono::steady_clock> p = chrono::steady_clock::now();
-    return chrono::duration_cast<chrono::microseconds>(p.time_since_epoch()).count();
+    std::chrono::time_point<std::chrono::steady_clock> p = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(p.time_since_epoch()).count();
 }

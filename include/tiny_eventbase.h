@@ -3,6 +3,8 @@
 
 #include "tiny_util.h"
 #include <memory>
+struct PollerBase;
+struct EventBase;
 
 struct EventBases: private NonCopyable
 {

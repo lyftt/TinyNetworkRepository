@@ -1,4 +1,5 @@
 #include "tiny_poller.h"
+#include "tiny_channel.h"
 #include <iostream>
 #include <errno.h>
 #include <cstring>
@@ -47,7 +48,7 @@ void EpollPoller::addChannel(Channel* ch)
 
 void EpollPoller::removeChannel(Channel* ch)
 {
-    m_liveChannels.erase();
+    m_liveChannels.erase(ch);
 
     for(int i = m_lastActive; i >= 0; --i)
     {
@@ -102,7 +103,7 @@ void EpollPoller::loopOnce(int waitMs)
 
         if(ch)
         {
-            if(revent & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
+            if(revents & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
             {
                 revents |= ReadEvent | WriteEvent;   //在可读可写中进行处理
             }
