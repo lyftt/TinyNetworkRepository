@@ -187,7 +187,7 @@ void EventBase::EventBaseImpl::init()
 
 void EventBase::EventBaseImpl::wakeUp()
 {
-    int ret = ::write(m_wakeupFds[1], (void*)'c', 1);
+    int ret = ::write(m_wakeupFds[1], "c", 1);
     if(ret < 0)
     {
         std::cout<<"EventBaseImpl write failed,  errno:"<<errno<<" "<<strerror(errno)<<std::endl;
@@ -207,7 +207,7 @@ void EventBase::EventBaseImpl::loop()
 
 void EventBase::EventBaseImpl::loopOnce(int waitMs)
 {
-    m_poller->loopOnce(waitMs);   //处理到期的读写事件
+    m_poller->loopOnce(std::min(waitMs, m_nextTimeOut));   //处理到期的读写事件
     handleTimeouts();             //处理到期的超时事件
 }
 
@@ -255,4 +255,9 @@ void EventBase::addTask(Task&& task)
 bool EventBase::cancel(TimerId timerId)
 {
     return m_impl && m_impl->cancel(timerId);
+}
+
+TimerId EventBase::runAt(int64_t milli, Task &&task, int64_t interval)
+{
+    return m_impl->runAt(milli, std::move(task), interval);
 }

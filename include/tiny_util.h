@@ -20,8 +20,8 @@ struct NonCopyable
 
 struct util
 {
-    static int64_t timeMicro();
-    static int64_t timeMilli() { return timeMicro() / 1000; }
+    static int64_t timeMicro();          //当前时间（微秒）
+    static int64_t timeMilli() { return timeMicro() / 1000; }   //当前时间（毫秒）
 };
 
 #endif

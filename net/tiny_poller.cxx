@@ -90,12 +90,7 @@ void EpollPoller::loopOnce(int waitMs)
         return;
     }
 
-    if(m_lastActive < 0)
-    {
-        return;
-    }
-
-    while(--m_lastActive > 0)
+    while(--m_lastActive >= 0)
     {
         int i = m_lastActive;
         Channel *ch = (Channel*)m_activeEvs[i].data.ptr;
