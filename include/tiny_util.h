@@ -5,7 +5,9 @@
 #include <cstdint>
 #include <functional>
 
+struct TcpConnection;
 using Task = std::function<void()>;
+using TcpTask = std::function<void(TcpConnection&)>;
 using TimerId = std::pair<int64_t, int64_t>;
 //typedef std::function<void()> Task;
 
