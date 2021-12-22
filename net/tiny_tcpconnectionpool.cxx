@@ -5,13 +5,14 @@
 TcpConnectionPool::TcpConnectionPool(int size):m_poolStartMem(nullptr), m_totalSize(size)
 {
     int totalSize = sizeof(TcpConnection) * size;
-    void* p = new char[totalSize];
-    TcpConnection* tcpConnPtrStart = (TcpConnection*)p;
+    //void* p = new char[totalSize];
+    m_poolStartMem = new char[totalSize];
+    TcpConnection* tcpConnPtrStart = (TcpConnection*)m_poolStartMem;
     TcpConnection* tcpConnPtr = tcpConnPtrStart;
 
     for(int i = 0; i < size; ++i)
     {
-        tcpConnPtr = new (tcpConnPtr) TcpConnection;
+        tcpConnPtr = new (tcpConnPtr) TcpConnection; //placement new
         m_freeConnectionList.push_back(tcpConnPtr);
         ++tcpConnPtr;
     }
@@ -30,8 +31,9 @@ int TcpConnectionPool::getSize() const
     return m_totalSize;
 }
 
-int TcpConnectionPool::getFreeSize() const
+int TcpConnectionPool::getFreeSize()
 {
+    std::lock_guard<std::mutex> guard(*this);
     return m_freeConnectionList.size();
 }
 

@@ -1,5 +1,6 @@
 #include "tiny_signal.h"
 #include "tiny_eventbase.h"
+#include "tiny_tcpserver.h"
 #include <iostream>
 #include <cstring>
 
@@ -16,9 +17,12 @@ int main()
     
     EventBase* base = new EventBase;
 
-    base->runAfter(1000, []{ std::cout<<"timer reach"<<std::endl; }, 1000);
-    base->addTask([]{ std::cout<<"task process1"<<std::endl; });
-    base->addTask([]{ std::cout<<"task process2"<<std::endl; });
+    //base->runAfter(1000, []{ std::cout<<"timer reach"<<std::endl; }, 1000);
+    //base->addTask([]{ std::cout<<"task process1"<<std::endl; });
+    //base->addTask([]{ std::cout<<"task process2"<<std::endl; });
+
+    TcpServer svr(base, "127.0.0.1", 6543);
+
     base->loop();
 
     return 0;

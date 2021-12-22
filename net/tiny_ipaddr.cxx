@@ -48,7 +48,7 @@ Ip4Addr::Ip4Addr(const std::string &host, unsigned short port)
 std::string Ip4Addr::toString() const
 {
     std::string ipStr(inet_ntoa(m_addr.sin_addr));
-    return ipStr + ":" + ntohs(m_addr.sin_port);
+    return ipStr + ":" + std::to_string(ntohs(m_addr.sin_port));
 }
 
 std::string Ip4Addr::ip() const

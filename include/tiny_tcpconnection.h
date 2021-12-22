@@ -24,10 +24,9 @@ struct TcpConnection
     void tcpHandleRead(TcpConnection* tcpConn);
     void tcpHandleWrite(TcpConnection* tcpConn);
 
-    virtual int readImp(int fd, void *buf, size_t bytes) { return ::read(fd, buf, bytes); }
-    virtual int writeImp(int fd, const void *buf, size_t bytes) { return ::write(fd, buf, bytes); }
+    int readImp(int fd, void *buf, size_t bytes) { return ::read(fd, buf, bytes); }
+    int writeImp(int fd, const void *buf, size_t bytes) { return ::write(fd, buf, bytes); }
 
-private:
     EventBase*     m_base;         //事件驱动器
     int            m_fd;           //文件描述符
     Channel*       m_channel;      //TCP通道

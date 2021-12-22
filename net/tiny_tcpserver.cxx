@@ -154,7 +154,7 @@ void TcpServer::TcpServerImpl::handleAccept()
             continue;
         }
 
-        TcpConnection* newConn = m_connPoolPtr->getOneTcpConnection(cfd, local, peer);
+        TcpConnection* newConn = m_connPoolPtr->getOneTcpConnection(cfd, m_base, local, peer);
         if(newConn == nullptr) //连接池已满
         {
             std::cout<<" tcp connection pool is full now"<<std::endl;
@@ -163,7 +163,7 @@ void TcpServer::TcpServerImpl::handleAccept()
         }
 
         //设置连接的读写回调函数
-        newConn->onRead();
+        newConn->onRead([](TcpConnection&) { std::cout <<"int tcp read task" << std::endl; });
 
     } while (1);
     

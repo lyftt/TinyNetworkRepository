@@ -40,7 +40,7 @@ bool SafeQueue<T>::push(T&& t)   //万能引用,左值右值都可以适配
 {
     std::lock_guard<std::mutex> guard(*this);
 
-    if(m_exit || m_capacity && m_items.size() >= m_capacity)
+    if(m_exit || (m_capacity && m_items.size() >= m_capacity))
         return false;
     
     m_items.push_back(std::move(t));

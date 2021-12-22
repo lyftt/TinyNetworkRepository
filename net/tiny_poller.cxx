@@ -100,7 +100,7 @@ void EpollPoller::loopOnce(int waitMs)
         {
             if(revents & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
             {
-                revents |= ReadEvent | WriteEvent;   //在可读可写中进行处理
+                revents |= ReadEvent;   //在可读中进行处理
             }
 
             if(revents & ReadEvent)
