@@ -22,6 +22,9 @@ int main()
     //base->addTask([]{ std::cout<<"task process2"<<std::endl; });
 
     TcpServer svr(base, "127.0.0.1", 6543);
+    svr.OnRead([](TcpConnection&){
+        std::cout<<"in tcp read task"<<std::endl;
+    });
 
     base->loop();
 

@@ -21,8 +21,8 @@ struct TcpConnection
     void onWrite(TcpTask&& readTask) { m_readTask = std::move(readTask); }
     void reset();
 
-    void tcpHandleRead(TcpConnection* tcpConn);
-    void tcpHandleWrite(TcpConnection* tcpConn);
+    void tcpHandleRead();
+    void tcpHandleWrite();
 
     int readImp(int fd, void *buf, size_t bytes) { return ::read(fd, buf, bytes); }
     int writeImp(int fd, const void *buf, size_t bytes) { return ::write(fd, buf, bytes); }

@@ -19,15 +19,17 @@ void TcpConnection::init(int fd, EventBase* base, Ip4Addr local, Ip4Addr peer)
     m_local = local;
     m_peer = peer;
     m_base = base;
+    m_fd = fd;
 
     m_channel = new Channel(base, fd, ReadEvent);
-    m_channel->onRead([=] { tcpHandleRead(this); });  //给通道设置读回调函数
+    m_channel->onRead([=] { tcpHandleRead(); });  //给通道设置读回调函数
 }
 
 void TcpConnection::reset()
 {
     m_curSequence++;
     m_base = nullptr;
+    m_fd = -1;
 
     if (m_channel)
     {
@@ -36,19 +38,19 @@ void TcpConnection::reset()
     }
 }
 
-void TcpConnection::tcpHandleRead(TcpConnection* tcpConn)
+void TcpConnection::tcpHandleRead()
 {
     //从通道中读取数据
     char buffer[128] = {0};
 
     while(true)
     {
-        int rd = readImp(tcpConn->m_channel->m_fd, buffer, sizeof(buffer) - 1);
+        int rd = readImp(m_channel->m_fd, buffer, sizeof(buffer) - 1);
     
         if(rd == 0)
         {
             //连接断开
-            tcpConn->reset();
+            reset();
             std::cout<<"connection break"<<std::endl;
             return;
         }
@@ -65,7 +67,7 @@ void TcpConnection::tcpHandleRead(TcpConnection* tcpConn)
             else if(rd < 0)
             {
                 //连接有问题需要断开
-                tcpConn->reset();
+                reset();
                 std::cout<<"connection break"<<std::endl;
                 return;
             }
@@ -77,10 +79,13 @@ void TcpConnection::tcpHandleRead(TcpConnection* tcpConn)
     }
     
     //在这里调用TcpConnection的读回调函数
-    tcpConn->m_readTask(*tcpConn);
+    if(m_readTask)
+    {
+        m_readTask(*this);
+    }
 }
 
-void TcpConnection::tcpHandleWrite(TcpConnection* tcpConn)
+void TcpConnection::tcpHandleWrite()
 {
     //向通道发送数据
 

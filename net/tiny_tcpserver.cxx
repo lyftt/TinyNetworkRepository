@@ -47,6 +47,8 @@ struct TcpServer::TcpServerImpl
     ~TcpServerImpl();
 
     void init();
+    void OnRead(TcpTask& task);
+    void OnRead(TcpTask&& task);
 
     enum STATUS
     {
@@ -67,6 +69,7 @@ private:
     int                                m_connPoolSize;  //服务器连接池大小
     Channel*                           m_listenChannel; //监听通道
     STATUS                             m_status;        //tcp服务器状态
+    TcpTask                            m_readTask;      //读回调
 };
 
 TcpServer::TcpServerImpl::TcpServerImpl(EventBase* base, const std::string& host, unsigned short port, int connPoolSize):m_base(base), m_addr(host, port), m_status(NOT_INIT), m_connPoolSize(connPoolSize)
@@ -77,6 +80,16 @@ TcpServer::TcpServerImpl::TcpServerImpl(EventBase* base, const std::string& host
 TcpServer::TcpServerImpl::~TcpServerImpl()
 {
 
+}
+
+void TcpServer::TcpServerImpl::OnRead(TcpTask& task)
+{
+    m_readTask = task;
+}
+
+void TcpServer::TcpServerImpl::OnRead(TcpTask&& task)
+{
+    m_readTask = std::move(task);
 }
 
 void TcpServer::TcpServerImpl::handleAccept()
@@ -162,8 +175,8 @@ void TcpServer::TcpServerImpl::handleAccept()
             return;
         }
 
-        //设置连接的读写回调函数
-        newConn->onRead([](TcpConnection&) { std::cout <<"int tcp read task" << std::endl; });
+        //设置连接的读回调函数
+        newConn->onRead(m_readTask);
 
     } while (1);
     
@@ -214,7 +227,7 @@ void TcpServer::TcpServerImpl::init()
     m_connPoolPtr = std::make_shared<TcpConnectionPool>(m_connPoolSize);  //创建连接池
 
     m_listenChannel = new Channel(m_base, listenSock, ReadEvent);  //为监听套接字创建通道，并监听读事件
-    m_listenChannel->onRead([this] { handleAccept(); });   //设置监听套接字的回调函数
+    m_listenChannel->onRead([this] { handleAccept(); });           //设置监听套接字的回调函数
     m_status = INITED;
 }
 
@@ -227,4 +240,14 @@ TcpServer::TcpServer(EventBase* base, const std::string& host, unsigned short po
 TcpServer::~TcpServer()
 {
 
+}
+
+void TcpServer::OnRead(TcpTask& task)
+{
+    m_impl->OnRead(task);
+}
+
+void TcpServer::OnRead(TcpTask&& task)
+{
+    m_impl->OnRead(std::move(task));
 }

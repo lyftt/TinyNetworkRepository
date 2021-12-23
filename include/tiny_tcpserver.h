@@ -3,12 +3,16 @@
 
 #include <memory>
 #include <string>
+#include "tiny_util.h"
 struct EventBase;
 
 struct TcpServer
 {
     TcpServer(EventBase* base, const std::string& host, unsigned short port, int connPoolSize=10000);
     ~TcpServer();
+
+    void OnRead(TcpTask& task);
+    void OnRead(TcpTask&& task);
 
 private:
     struct TcpServerImpl;
