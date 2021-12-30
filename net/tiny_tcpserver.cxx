@@ -175,6 +175,7 @@ void TcpServer::TcpServerImpl::handleAccept()
             return;
         }
 
+        std::cout<<"get one connection from connection pool, pool size:"<<m_connPoolPtr->getFreeSize()<<std::endl;
         //设置连接的读回调函数
         newConn->onRead(m_readTask);
 

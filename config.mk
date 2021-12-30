@@ -11,6 +11,7 @@ BUILD_DIR = $(BUILD_ROOT)/signal/ \
 			$(BUILD_ROOT)/proc/   \
 			$(BUILD_ROOT)/thread/ \
 			$(BUILD_ROOT)/util/   \
-			$(BUILD_ROOT)/app/    \
+			$(BUILD_ROOT)/codec/  \
+			$(BUILD_ROOT)/app/       
 
 export DEBUG = true

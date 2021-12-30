@@ -1,6 +1,7 @@
 #include "tiny_tcpconnectionpool.h"
 #include "tiny_tcpconnection.h"
 #include <memory>
+#include <iostream>
 
 TcpConnectionPool::TcpConnectionPool(int size):m_poolStartMem(nullptr), m_totalSize(size)
 {
@@ -26,8 +27,9 @@ TcpConnectionPool::~TcpConnectionPool()
     }
 }
 
-int TcpConnectionPool::getSize() const
+int TcpConnectionPool::getSize()
 {
+    std::lock_guard<std::mutex> guard(*this);
     return m_totalSize;
 }
 
@@ -45,7 +47,7 @@ TcpConnection* TcpConnectionPool::getOneTcpConnection(int fd, EventBase* base, I
 
     TcpConnection* temp = m_freeConnectionList.front();
     m_freeConnectionList.pop_front();
-    temp->init(fd, base, local, peer);
+    temp->init(fd, base, local, peer, this);
     return temp;
 }
 
@@ -57,9 +59,10 @@ void TcpConnectionPool::putOneTcpConnection(TcpConnection* tcpConn)
 
     tcpConn->reset();
     m_freeConnectionList.push_back(tcpConn);
+    std::cout<<"give back one tcp connection to pool, pool size:"<<m_freeConnectionList.size()<<std::endl;
 }
 
-void TcpConnectionPool::init()
-{
+// void TcpConnectionPool::init()
+// {
 
-}
+// }

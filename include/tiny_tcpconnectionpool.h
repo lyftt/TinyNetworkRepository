@@ -15,9 +15,9 @@ public:
     TcpConnectionPool(int size);
     ~TcpConnectionPool();
 
-    int  getSize() const;                         //获取连接池大小
+    int  getSize();                               //获取连接池大小
     int  getFreeSize();                           //获取空闲连接大小
-    void init();                                  //初始化连接池
+    //void init();                                  //初始化连接池
     TcpConnection* getOneTcpConnection(int fd, EventBase* base, Ip4Addr local, Ip4Addr peer);   //从连接池中获取一条连接
     void           putOneTcpConnection(TcpConnection* tcpConn);                        //向连接池中回收一条连接
 

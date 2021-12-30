@@ -1,6 +1,7 @@
 #include "tiny_signal.h"
 #include "tiny_eventbase.h"
 #include "tiny_tcpserver.h"
+#include "tiny_tcpconnection.h"
 #include <iostream>
 #include <cstring>
 
@@ -21,9 +22,11 @@ int main()
     //base->addTask([]{ std::cout<<"task process1"<<std::endl; });
     //base->addTask([]{ std::cout<<"task process2"<<std::endl; });
 
+    //将tcp svr 挂到eventbase上
     TcpServer svr(base, "127.0.0.1", 6543);
-    svr.OnRead([](TcpConnection&){
-        std::cout<<"in tcp read task"<<std::endl;
+    svr.OnRead([](TcpConnection& c){
+        std::cout<<"in tcp read task, now content in recv bufer:"<< c.getRecvBufferAddr() <<std::endl;
+        c.consumedRecvBufferSize(c.getRecvBufferSize());
     });
 
     base->loop();
