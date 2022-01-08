@@ -22,6 +22,7 @@ struct TcpConnection
     void onWrite(TcpTask& readTask) { m_readTask = readTask; }
     void onWrite(TcpTask&& readTask) { m_readTask = std::move(readTask); }
     void reset();
+    void close();
 
     void tcpHandleRead();
     //void tcpHandleWrite();  //没想好

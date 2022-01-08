@@ -44,6 +44,8 @@
         "thread": "cpp",
         "utility": "cpp",
         "typeinfo": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "cstddef": "cpp",
+        "future": "cpp"
     }
 }

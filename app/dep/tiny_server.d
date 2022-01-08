@@ -5,4 +5,6 @@
  /home/lyf/TinyNetworkRepository/include/tiny_tcpserver.h \
  /home/lyf/TinyNetworkRepository/include/tiny_tcpconnection.h \
  /home/lyf/TinyNetworkRepository/include/tiny_ipaddr.h \
+ /home/lyf/TinyNetworkRepository/include/tiny_buffer.h \
+ /home/lyf/TinyNetworkRepository/include/tiny_codec.h \
  /home/lyf/TinyNetworkRepository/include/tiny_buffer.h

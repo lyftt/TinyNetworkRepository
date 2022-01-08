@@ -1,5 +1,6 @@
 #include "tiny_buffer.h"
 #include <algorithm>
+#include <cstring>
 
 Buffer::Buffer():m_buf(nullptr), m_begin(0), m_end(0), m_capacity(0), m_exp(512)
 {
@@ -9,6 +10,33 @@ Buffer::Buffer():m_buf(nullptr), m_begin(0), m_end(0), m_capacity(0), m_exp(512)
 Buffer::~Buffer()
 {
     delete[] m_buf;
+}
+
+Buffer::Buffer(Buffer&& b):m_buf(b.m_buf), m_begin(b.m_begin), m_end(b.m_end), m_capacity(b.m_capacity), m_exp(b.m_exp)
+{
+    b.clear(); //清空原来的
+}
+
+Buffer& Buffer::operator=(Buffer&& b)
+{
+    if(&b == this)
+    {
+        return *this;
+    }
+
+    //先清空自己
+    this->clear();
+
+    //移动
+    m_buf = b.m_buf;
+    m_begin = b.m_begin;
+    m_end = b.m_end;
+    m_capacity = b.m_capacity;
+
+    //清空b
+    b.clear();  
+
+    return *this;
 }
 
 size_t Buffer::size() const
@@ -88,6 +116,7 @@ void Buffer::moveHead()
     m_end -= m_begin;
 }
 
+//返回尾部
 char *Buffer::makeRoom(size_t len) 
 {
     if (m_begin + len <= m_capacity) {
@@ -97,4 +126,11 @@ char *Buffer::makeRoom(size_t len)
         expand(len);
     }
     return end();
+}
+
+Buffer& Buffer::append(const char* data, size_t len)
+{
+    memcpy(makeRoom(len), data, len);
+    addSize(len);
+    return *this;
 }

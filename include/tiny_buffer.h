@@ -8,6 +8,14 @@ class Buffer
 public:
     Buffer();
     ~Buffer();
+    
+    //只允许移动
+    Buffer(Buffer&& b);
+    Buffer& operator=(Buffer&& b);
+
+    //禁止拷贝
+    Buffer(const Buffer& b) = delete; 
+    Buffer& operator=(const Buffer& b) =delete;
 
     size_t size() const;
     bool empty() const;
@@ -16,11 +24,13 @@ public:
     char* data() const;
     size_t space() const;
 
-    void makeRoom();
-    char *makeRoom(size_t len);
-    void addSize(size_t len); 
-    void consumed(size_t len);
-    void clear();  //清空状态
+    void makeRoom();             //保证至少有512字节
+    char *makeRoom(size_t len);  //保证至少有len的空间,返回尾部地址
+    void addSize(size_t len);    //缓冲区增加len大小
+    void consumed(size_t len);   //缓冲区消费掉len大小
+    void clear();                //清空状态
+
+    Buffer& append(const char* data, size_t len);   //从尾部增加len字节
 
 private:
     void moveHead();

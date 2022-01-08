@@ -41,6 +41,12 @@ void TcpConnection::reset()
     }
 }
 
+//主动关闭连接
+void TcpConnection::close()
+{
+    m_connPool->putOneTcpConnection(this);
+}
+
 void TcpConnection::tcpHandleRead()
 {
     //循环从通道中读取数据

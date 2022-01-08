@@ -2,6 +2,7 @@
 #include "tiny_eventbase.h"
 #include "tiny_tcpserver.h"
 #include "tiny_tcpconnection.h"
+#include "tiny_codec.h"
 #include <iostream>
 #include <cstring>
 
@@ -26,7 +27,36 @@ int main()
     TcpServer svr(base, "127.0.0.1", 6543);
     svr.OnRead([](TcpConnection& c){
         std::cout<<"in tcp read task, now content in recv bufer:"<< c.getRecvBufferAddr() <<std::endl;
-        c.consumedRecvBufferSize(c.getRecvBufferSize());
+
+        CommonCodec codec;
+
+        //缓冲区可能跟不止一个报文
+        while(1)
+        {
+            std::tuple<long, Rpt> reportTup = codec.decode(c.getRecvBufferAddr(), c.getRecvBufferSize());
+
+            //缓冲区有问题
+            if(std::get<0>(reportTup) < 0)
+            {
+                std::cout<<"tcp recv buffer is not right now, try to close"<<std::endl;
+                c.close();
+                break;
+            }
+            //缓冲区数据不够一个报文
+            else if(std::get<0>(reportTup) == 0)
+            {
+                std::cout<<"tcp recv buffer has data, but not up to one report, try to close"<<std::endl;
+                break;
+            }
+
+            //从缓冲区中解出一个报文
+            Rpt report = std::move(std::get<1>(reportTup));
+            std::cout<<"decode one report, len:"<< report.m_rptHead.m_rptLen << " type:" << report.m_rptHead.m_type<< " content:" << report.m_rptBuffer.data() << std::endl;
+            c.consumedRecvBufferSize(std::get<0>(reportTup));  //从缓冲区中移除消费掉的数据
+
+            //放入线程池中处理
+        }
+        
     });
 
     base->loop();
