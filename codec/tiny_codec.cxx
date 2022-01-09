@@ -40,6 +40,12 @@ Buffer CommonCodec::encode(const Rpt& rpt)
 //
 std::tuple<long, Rpt> CommonCodec::decode(char* buf, size_t len)
 {
+    //缓冲区不够一个报文的数据
+    if(len == 0)
+    {
+        return std::tuple<long, Rpt>(0, Rpt());
+    }
+
     //缓冲区数据有问题
     if(*buf != 0x3f)
     {

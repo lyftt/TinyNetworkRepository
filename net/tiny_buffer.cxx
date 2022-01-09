@@ -14,6 +14,7 @@ Buffer::~Buffer()
 
 Buffer::Buffer(Buffer&& b):m_buf(b.m_buf), m_begin(b.m_begin), m_end(b.m_end), m_capacity(b.m_capacity), m_exp(b.m_exp)
 {
+    b.m_buf = nullptr;
     b.clear(); //清空原来的
 }
 
@@ -28,7 +29,7 @@ Buffer& Buffer::operator=(Buffer&& b)
     this->clear();
 
     //移动
-    m_buf = b.m_buf;
+    std::swap(m_buf, b.m_buf);
     m_begin = b.m_begin;
     m_end = b.m_end;
     m_capacity = b.m_capacity;

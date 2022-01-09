@@ -3,6 +3,7 @@
 #include "tiny_tcpserver.h"
 #include "tiny_tcpconnection.h"
 #include "tiny_codec.h"
+#include "tiny_threadpool.h"
 #include <iostream>
 #include <cstring>
 
@@ -10,6 +11,9 @@ static void signalUniformHandler(int sigNo)
 {
     std::cout<<"asd"<<std::endl;
 }
+
+//创建业务线程池
+auto g_workPool = ThreadPool::Create(5, 10, std::chrono::seconds(1), 10000);
 
 int main()
 {
@@ -19,9 +23,13 @@ int main()
     
     EventBase* base = new EventBase;
 
+    //一些定时任务
     //base->runAfter(1000, []{ std::cout<<"timer reach"<<std::endl; }, 1000);
     //base->addTask([]{ std::cout<<"task process1"<<std::endl; });
     //base->addTask([]{ std::cout<<"task process2"<<std::endl; });
+
+    //业务线程池启动
+    g_workPool->start();
 
     //将tcp svr 挂到eventbase上
     TcpServer svr(base, "127.0.0.1", 6543);
@@ -54,7 +62,37 @@ int main()
             std::cout<<"decode one report, len:"<< report.m_rptHead.m_rptLen << " type:" << report.m_rptHead.m_type<< " content:" << report.m_rptBuffer.data() << std::endl;
             c.consumedRecvBufferSize(std::get<0>(reportTup));  //从缓冲区中移除消费掉的数据
 
-            //放入线程池中处理
+            //将报文组成一个消息
+            Msg msg;
+            msg.m_msgHead.m_curSeq = c.m_curSequence;
+            msg.m_msgHead.m_tcpConnPtr = &c;
+            msg.m_rpt = std::move(report);
+
+            //将消息放入线程池中处理
+            //要将对象移入lambda表达式，c++11中只能这么做; c++14可以使用广义捕获，非常简单
+            auto result = g_workPool->enqueue(std::bind([] (const Msg& msg)
+                {
+                    Msg resultMsg;
+                    resultMsg.m_msgHead = msg.m_msgHead;
+                    resultMsg.m_rpt.m_rptHead.m_type = 1;
+                    resultMsg.m_rpt.m_rptHead.m_rptLen = 8 + strlen("recv ok, notify you");
+                    resultMsg.m_rpt.m_rptBuffer.append("recv ok, notify you", strlen("recv ok, notify you"));
+
+                    return std::move(resultMsg);
+                },
+                std::move(msg)  //会被移动到bind返回的绑定对象中
+                )
+            );
+
+            if(result == nullptr)
+            {
+                std::cout<<"thread enqueue failed, return nullptr"<<std::endl;
+                continue;
+            }
+
+            //将期望送入发送线程
+            Msg m = std::move(result->get());
+            std::cout<<m.m_rpt.m_rptBuffer.data()<<std::endl;
         }
         
     });

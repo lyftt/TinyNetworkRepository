@@ -30,8 +30,8 @@ struct Rpt
 //消息头
 struct MsgHead
 {
-    uint64_t m_curSeq;        //用于检错废包
-    TcpConnection* m_tcpConn; //所属Tcp连接
+    uint64_t m_curSeq;         //用于检错废包
+    TcpConnection* m_tcpConnPtr; //所属Tcp连接
 };
 
 //消息
