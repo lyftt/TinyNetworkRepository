@@ -4,7 +4,7 @@
 #include "tiny_tcpconnectionpool.h"
 #include <iostream>
 
-TcpConnection::TcpConnection():m_channel(nullptr), m_base(nullptr)
+TcpConnection::TcpConnection():m_channel(nullptr), m_base(nullptr), m_useSendEvent(false)
 {
     m_curSequence = 0;
 }
@@ -16,12 +16,13 @@ TcpConnection::~TcpConnection()
 
 void TcpConnection::init(int fd, EventBase* base, Ip4Addr local, Ip4Addr peer, TcpConnectionPool* pool)
 {
-    m_curSequence++;
+    ++m_curSequence;
     m_local = local;
     m_peer = peer;
     m_base = base;
     m_fd = fd;
     m_connPool = pool;
+    m_useSendEvent = false;
 
     m_channel = new Channel(base, fd, ReadEvent);
     m_channel->onRead([=] { tcpHandleRead(); });  //给通道设置读回调函数
@@ -29,10 +30,11 @@ void TcpConnection::init(int fd, EventBase* base, Ip4Addr local, Ip4Addr peer, T
 
 void TcpConnection::reset()
 {
-    m_curSequence++;
+    ++m_curSequence;
     m_base = nullptr;
     m_fd = -1;
     m_connPool = nullptr;
+    m_useSendEvent = false;
 
     if (m_channel)
     {
@@ -92,6 +94,11 @@ void TcpConnection::tcpHandleRead()
     {
         m_readTask(*this);
     }
+}
+
+void TcpConnection::tcpHandleWrite()
+{
+    
 }
 
 char* TcpConnection::getRecvBufferAddr()

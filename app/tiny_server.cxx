@@ -64,7 +64,7 @@ int main()
 
             //将报文组成一个消息
             Msg msg;
-            msg.m_msgHead.m_curSeq = c.m_curSequence;
+            msg.m_msgHead.m_curSeq = c.m_curSequence.load();
             msg.m_msgHead.m_tcpConnPtr = &c;
             msg.m_rpt = std::move(report);
 
