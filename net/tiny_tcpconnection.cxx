@@ -24,8 +24,9 @@ void TcpConnection::init(int fd, EventBase* base, Ip4Addr local, Ip4Addr peer, T
     m_connPool = pool;
     m_useSendEvent = false;
 
-    m_channel = new Channel(base, fd, ReadEvent);
+    m_channel = new Channel(base, fd, ReadEvent); //一开始只允许监听读事件
     m_channel->onRead([=] { tcpHandleRead(); });  //给通道设置读回调函数
+    m_channel->onWrite([=] { tcpHandleWrite(); }); //给通道设置写回调函数
 }
 
 void TcpConnection::reset()
@@ -98,7 +99,89 @@ void TcpConnection::tcpHandleRead()
 
 void TcpConnection::tcpHandleWrite()
 {
-    
+    if(m_writeBuffer.size() > 0)
+    {
+        size_t sended = isend(m_writeBuffer.data(), m_writeBuffer.size());
+        m_writeBuffer.consumed(sended);
+
+        //数据已经全部发完，需要取消事件发送驱动
+        if(m_writeBuffer.empty() && m_channel->writeEnabled())
+        {
+            m_channel->enableWrite(false);
+            m_useSendEvent.store(false);
+        }
+    }
+}
+
+//返回直接发送出去的字节数
+size_t TcpConnection::isend(const char* buf, size_t len)
+{
+    size_t nsend = 0;
+
+    while(len > nsend)
+    {
+        size_t wd = writeImp(m_channel->fd(), buf + nsend, len - nsend);
+
+        if(wd > 0)
+        {
+            nsend += wd;
+            continue;
+        }
+        //被信号中断
+        else if(wd < 0 && errno == EINTR)
+        {
+            continue;
+        }
+        //发送缓冲区满
+        else if(wd < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+        {
+            if(!m_channel->writeEnabled())
+            {
+                m_useSendEvent = true;
+                m_channel->enableRead(true); //使能事件驱动
+            }
+            break;
+        }
+        //发送出错
+        else
+        {
+            break;
+        }
+    }
+
+    return nsend;
+}
+
+//进行数据发送，需要处理发送满的情况
+//返回0 ：直接发送完
+//返回1 ：未发送完，启动了事件驱动
+//返回-1：已经启动了事件驱动暂时不能发送
+size_t TcpConnection::send(Buffer& buffer)
+{
+    if(m_channel)
+    {
+        //如果当前已经在使用事件驱动进行发送
+        if(m_useSendEvent.load())
+        {
+            return -1;
+        }
+
+        //开始直接发送数据
+        if(buffer.size() > 0)
+        {
+            size_t sended = isend(buffer.data(), buffer.size());
+            buffer.consumed(sended);
+        }
+        
+        //还有数据没发送完，已经启动事件驱动了
+        if(buffer.size() > 0)
+        {
+            m_writeBuffer.append(buffer.data(), buffer.size());
+            return 1; 
+        }
+    }
+
+    return 0;
 }
 
 char* TcpConnection::getRecvBufferAddr()

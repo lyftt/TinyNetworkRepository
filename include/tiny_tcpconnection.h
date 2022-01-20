@@ -28,7 +28,9 @@ struct TcpConnection
 
     void tcpHandleRead();
     void tcpHandleWrite();
-    void send();
+
+    size_t send(Buffer& buffer);
+    size_t isend(const char* buf, size_t len);
 
     int readImp(int fd, void *buf, size_t bytes) { return ::read(fd, buf, bytes); }
     int writeImp(int fd, const void *buf, size_t bytes) { return ::write(fd, buf, bytes); }
@@ -36,6 +38,9 @@ struct TcpConnection
     char*  getRecvBufferAddr(); //获取接收缓冲地址
     size_t getRecvBufferSize(); //获取接收缓冲大小
     void   consumedRecvBufferSize(size_t len); //从接收缓冲区消费掉len的数据
+
+    bool useSendEvent(){ return m_useSendEvent.load(); }
+    bool curSequence() { return m_curSequence.load(); }
 
     EventBase*     m_base;         //事件驱动器
     int            m_fd;           //文件描述符

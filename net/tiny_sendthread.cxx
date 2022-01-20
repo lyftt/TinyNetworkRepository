@@ -19,6 +19,7 @@ std::shared_ptr<SendThread> SendThread::createThread()
     std::shared_ptr<SendThread> sp(new SendThread);
     std::weak_ptr<SendThread> wp(sp);
     std::thread th(SendThread::workThread, wp);
+    th.detach();
     return sp;
 }
 
@@ -85,10 +86,10 @@ void SendThread::workThread(std::weak_ptr<SendThread> sendThread)
 
                 while(pos != posEnd)
                 {
+                    auto pos2 = pos;
                     //过期包
-                    if(pos->m_msgHead.m_tcpConnPtr->m_curSequence.load() != pos->m_msgHead.m_curSeq)
+                    if(pos2->m_msgHead.m_tcpConnPtr->curSequence() != pos2->m_msgHead.m_curSeq)
                     {
-                        auto pos2 = pos;
                         ++pos;
 
                         sp->m_msgEventQueue.erase(pos2);
@@ -96,40 +97,23 @@ void SendThread::workThread(std::weak_ptr<SendThread> sendThread)
                         continue;
                     }
 
-                    //如果该条连接现在在使用驱动发送，则说明发送区比较满，跳过
-                    if(pos->m_msgHead.m_tcpConnPtr->m_useSendEvent.load())
+                    //将要发送的报文进行编码
+                    CommonCodec codec;
+                    Buffer sendBuf = codec.encode(pos2->m_rpt); //编码成字节流
+                    
+                    //发送
+                    auto ret = pos2->m_msgHead.m_tcpConnPtr->send(sendBuf);
+                    //该连接已经启动了事件驱动，暂时不能发送，需要跳过这个msg
+                    if(ret == -1)
                     {
                         ++pos;
+                    }else
+                    {
+                        ++pos;
+
+                        sp->m_msgEventQueue.erase(pos2);
+                        --sp->m_msgEventQueueSize;
                         continue;
-                    }
-
-                    //将要发送的报文进行编码
-                    auto pos2 = pos;
-                    CommonCodec codec;
-                    Buffer sendBuf = codec.encode(pos2->m_rpt);
-                    //开始直接发送数据
-                    int ret = ::send(pos2->m_msgHead.m_tcpConnPtr->m_fd, sendBuf.data(), sendBuf.size(), 0);
-
-                    if(ret > 0)
-                    {
-                        //全部发送完
-                        if(ret == sendBuf.size())
-                        {
-                            ++pos;
-                            sp->m_msgEventQueue.erase(pos2);
-                            continue;
-                        }
-                        //没有全部发送完，说明发送缓冲满了，使用驱动来发送这个报文剩下的部分s
-                        else
-                        {
-                            pos2->m_msgHead.m_tcpConnPtr->m_useSendEvent = true; //开始使用驱动发送
-                            sendBuf.consumed(ret);
-                            pos2->m_msgHead.m_tcpConnPtr->m_writeBuffer.append(sendBuf.data(), sendBuf.size());  //添加到tcp连接的发送缓冲区
-                        }
-                    }
-                    else
-                    {
-
                     }
                 }
             }

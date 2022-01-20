@@ -91,8 +91,9 @@ int main()
             }
 
             //将期望送入发送线程
-            Msg m = std::move(result->get());
-            std::cout<<m.m_rpt.m_rptBuffer.data()<<std::endl;
+            //Msg m = std::move(result->get());
+            //std::cout<<m.m_rpt.m_rptBuffer.data()<<std::endl;
+            
         }
         
     });
