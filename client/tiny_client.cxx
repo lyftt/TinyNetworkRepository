@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     while( fgets( in, sizeof( in ), stdin ) != NULL ) {
         sendBuf[0] = 0x3f;
     
-        unsigned short temp = 8 + strlen(in);
+        unsigned short temp = 8 + strlen("nihao");
         memcpy(sendBuf + 1, &temp, sizeof(temp));
 
         temp = 0;
@@ -45,9 +45,9 @@ int main(int argc, char *argv[])
         temp = 0;
         memcpy(sendBuf + 5, &temp, sizeof(temp));
 
-        memcpy(sendBuf + 9, in, strlen(in));
+        memcpy(sendBuf + 9, "nihao", strlen("nihao"));
 
-        int total = 9 + strlen(in);
+        int total = 9 + strlen("nihao");
 
         write( sockfd, sendBuf, total );
         read( sockfd, recvBuf, sizeof( recvBuf ) );

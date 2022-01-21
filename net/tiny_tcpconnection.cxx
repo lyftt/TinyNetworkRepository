@@ -24,6 +24,9 @@ void TcpConnection::init(int fd, EventBase* base, Ip4Addr local, Ip4Addr peer, T
     m_connPool = pool;
     m_useSendEvent = false;
 
+    m_recvBuffer.clear();   //接收缓冲清空状态
+    m_writeBuffer.clear();  //发送缓冲清空状态
+
     m_channel = new Channel(base, fd, ReadEvent); //一开始只允许监听读事件
     m_channel->onRead([=] { tcpHandleRead(); });  //给通道设置读回调函数
     m_channel->onWrite([=] { tcpHandleWrite(); }); //给通道设置写回调函数

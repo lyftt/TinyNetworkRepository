@@ -4,6 +4,7 @@
 #include "tiny_tcpconnection.h"
 #include "tiny_codec.h"
 #include "tiny_threadpool.h"
+#include "tiny_sendthread.h"
 #include <iostream>
 #include <cstring>
 
@@ -14,6 +15,9 @@ static void signalUniformHandler(int sigNo)
 
 //创建业务线程池
 auto g_workPool = ThreadPool::Create(5, 10, std::chrono::seconds(1), 10000);
+
+//创建发送线程
+auto g_sendThread = SendThread::createThread();
 
 int main()
 {
@@ -53,7 +57,7 @@ int main()
             //缓冲区数据不够一个报文
             else if(std::get<0>(reportTup) == 0)
             {
-                std::cout<<"tcp recv buffer has data, but not up to one report, try to close"<<std::endl;
+                std::cout<<"tcp recv buffer has data, but not up to one report"<<std::endl;
                 break;
             }
 
@@ -78,7 +82,8 @@ int main()
                     resultMsg.m_rpt.m_rptHead.m_rptLen = 8 + strlen("recv ok, notify you");
                     resultMsg.m_rpt.m_rptBuffer.append("recv ok, notify you", strlen("recv ok, notify you"));
 
-                    return std::move(resultMsg);
+                    g_sendThread->pushMsg(std::move(resultMsg));
+                    //return std::move(resultMsg);
                 },
                 std::move(msg)  //会被移动到bind返回的绑定对象中
                 )
@@ -92,8 +97,7 @@ int main()
 
             //将期望送入发送线程
             //Msg m = std::move(result->get());
-            //std::cout<<m.m_rpt.m_rptBuffer.data()<<std::endl;
-            
+            //std::cout<<m.m_rpt.m_rptBuffer.data()<<std::endl; 
         }
         
     });

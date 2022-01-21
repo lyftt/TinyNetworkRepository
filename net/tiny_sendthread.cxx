@@ -81,6 +81,7 @@ void SendThread::workThread(std::weak_ptr<SendThread> sendThread)
 
             {
                 std::lock_guard<std::mutex> guard(sp->m_mtxEventQueue);   //锁住队列
+                CommonCodec codec;
                 //msg = std::move(sp->m_msgEventQueue.front());
                 //sp->m_msgEventQueue.pop_front();
 
@@ -98,7 +99,6 @@ void SendThread::workThread(std::weak_ptr<SendThread> sendThread)
                     }
 
                     //将要发送的报文进行编码
-                    CommonCodec codec;
                     Buffer sendBuf = codec.encode(pos2->m_rpt); //编码成字节流
                     
                     //发送

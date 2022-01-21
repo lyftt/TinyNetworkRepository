@@ -40,7 +40,7 @@ struct TcpConnection
     void   consumedRecvBufferSize(size_t len); //从接收缓冲区消费掉len的数据
 
     bool useSendEvent(){ return m_useSendEvent.load(); }
-    bool curSequence() { return m_curSequence.load(); }
+    uint64_t curSequence() { return m_curSequence.load(); }
 
     EventBase*     m_base;         //事件驱动器
     int            m_fd;           //文件描述符
