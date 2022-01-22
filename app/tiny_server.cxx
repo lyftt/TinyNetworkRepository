@@ -5,6 +5,7 @@
 #include "tiny_codec.h"
 #include "tiny_threadpool.h"
 #include "tiny_sendthread.h"
+#include "tiny_recythread.h"
 #include <iostream>
 #include <cstring>
 
@@ -18,6 +19,9 @@ auto g_workPool = ThreadPool::Create(5, 10, std::chrono::seconds(1), 10000);
 
 //创建发送线程
 auto g_sendThread = SendThread::createThread();
+
+//创建回收线程
+auto g_recyThread = RecyThread::createThread();
 
 int main()
 {
@@ -50,8 +54,8 @@ int main()
             //缓冲区有问题
             if(std::get<0>(reportTup) < 0)
             {
-                std::cout<<"tcp recv buffer is not right now, try to close"<<std::endl;
-                c.close();
+                std::cout<<"tcp recv buffer is not right now, try to close, push into recycle thread"<<std::endl;
+                c.recycle();
                 break;
             }
             //缓冲区数据不够一个报文

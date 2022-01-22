@@ -5,4 +5,5 @@
  /home/lyf/TinyNetworkRepository/include/tiny_buffer.h \
  /home/lyf/TinyNetworkRepository/include/tiny_channel.h \
  /home/lyf/TinyNetworkRepository/include/tiny_poller.h \
- /home/lyf/TinyNetworkRepository/include/tiny_tcpconnectionpool.h
+ /home/lyf/TinyNetworkRepository/include/tiny_tcpconnectionpool.h \
+ /home/lyf/TinyNetworkRepository/include/tiny_recythread.h

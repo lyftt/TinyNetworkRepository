@@ -107,6 +107,7 @@ void SendThread::workThread(std::weak_ptr<SendThread> sendThread)
                     if(ret == -1)
                     {
                         ++pos;
+                        sem_post(&sp->m_semEventQueue);  //因为这个跳过了，但是还留存在队列中，可能会滞留
                     }else
                     {
                         ++pos;

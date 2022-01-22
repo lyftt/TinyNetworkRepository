@@ -6,6 +6,7 @@
 #include "tiny_buffer.h"
 #include <unistd.h>
 #include <atomic>
+#include <chrono>
 
 struct Channel;
 struct EventBase;
@@ -19,7 +20,8 @@ struct TcpConnection
 
     void init(int fd, EventBase* base, Ip4Addr local, Ip4Addr peer, TcpConnectionPool*);
     void reset();
-    void close();
+    void close();   // 关闭连接
+    void recycle(); // 回收连接
 
     void onRead(TcpTask& readTask) { m_readTask = readTask; }
     void onRead(TcpTask&& readTask) { m_readTask = std::move(readTask); }
@@ -54,6 +56,7 @@ struct TcpConnection
     Buffer         m_recvBuffer;   //TCP接收缓冲
     Buffer         m_writeBuffer;  //TCP写缓冲区
     TcpConnectionPool* m_connPool; //TCP连接池
+    std::chrono::time_point<std::chrono::steady_clock> m_inRecyTimePoint;  //放入回收线程的时间点
 };
 
 #endif

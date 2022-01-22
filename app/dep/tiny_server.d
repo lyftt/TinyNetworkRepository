@@ -10,4 +10,5 @@
  /home/lyf/TinyNetworkRepository/include/tiny_buffer.h \
  /home/lyf/TinyNetworkRepository/include/tiny_threadpool.h \
  /home/lyf/TinyNetworkRepository/include/tiny_sendthread.h \
- /home/lyf/TinyNetworkRepository/include/tiny_codec.h
+ /home/lyf/TinyNetworkRepository/include/tiny_codec.h \
+ /home/lyf/TinyNetworkRepository/include/tiny_recythread.h

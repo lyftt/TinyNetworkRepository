@@ -3,6 +3,11 @@
 #include "tiny_poller.h"
 #include "tiny_tcpconnectionpool.h"
 #include <iostream>
+#include <memory>
+#include "tiny_recythread.h"
+#include <chrono>
+
+extern std::shared_ptr<RecyThread> g_recyThread;
 
 TcpConnection::TcpConnection():m_channel(nullptr), m_base(nullptr), m_useSendEvent(false)
 {
@@ -47,6 +52,15 @@ void TcpConnection::reset()
     }
 }
 
+//回收连接
+void TcpConnection::recycle()
+{
+    //放入回收线程
+    g_recyThread->pushConnection(this);
+    m_inRecyTimePoint = std::chrono::steady_clock::now();
+    m_channel->enableRead(false);
+}
+
 //主动关闭连接
 void TcpConnection::close()
 {
@@ -64,8 +78,12 @@ void TcpConnection::tcpHandleRead()
         if(rd == 0)
         {
             //连接断开，连接池回收连接
-            m_connPool->putOneTcpConnection(this);
-            std::cout<<"connection break, give back to connection pool"<<std::endl;
+            //m_connPool->putOneTcpConnection(this);
+            //改为放入回收线程
+            //g_recyThread->pushConnection(this);
+            //m_inRecyTimePoint = std::chrono::steady_clock::now();
+            recycle();
+            std::cout<<"connection break, push into recycle thread"<<std::endl;
             return;
         }
         else
@@ -81,8 +99,12 @@ void TcpConnection::tcpHandleRead()
             else if(rd < 0)
             {
                 //连接有问题需要断开，连接池回收连接
-                m_connPool->putOneTcpConnection(this);
-                std::cout<<"connection break, give back to connection pool"<<std::endl;
+                //m_connPool->putOneTcpConnection(this);
+                //改为放入回收线程
+                //g_recyThread->pushConnection(this);
+                //m_inRecyTimePoint = std::chrono::steady_clock::now();
+                recycle();
+                std::cout<<"connection break, push into recycle thread"<<std::endl;
                 return;
             }
             else

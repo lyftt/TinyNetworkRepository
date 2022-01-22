@@ -48,6 +48,7 @@ TcpConnection* TcpConnectionPool::getOneTcpConnection(int fd, EventBase* base, I
     TcpConnection* temp = m_freeConnectionList.front();
     m_freeConnectionList.pop_front();
     temp->init(fd, base, local, peer, this);
+    std::cout<<"get one connection from connection pool, pool size:"<<m_freeConnectionList.size()<<std::endl;
     return temp;
 }
 
