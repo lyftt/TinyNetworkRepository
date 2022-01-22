@@ -51,7 +51,15 @@ int main(int argc, char *argv[])
 
         write( sockfd, sendBuf, total );
         read( sockfd, recvBuf, sizeof( recvBuf ) );
-        fputs( recvBuf, stdout );
+
+        if(recvBuf[0] == 0x3f)
+        {
+            int rptLen = 0;
+            char sstr[100] = {0};
+            memcpy(&rptLen, recvBuf + 1, 2);
+            memcpy(sstr, recvBuf + 9, rptLen - 8);
+            fputs( sstr, stdout );
+        }
 
         memset( in, 0, sizeof( in ) );
         memset( recvBuf, 0, sizeof( recvBuf ) );
